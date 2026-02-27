@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { ProgressProvider } from './hooks/useProgress';
+import { LangProvider } from './hooks/useLang';
 import { Welcome } from './pages/Welcome';
 import { Home } from './pages/Home';
 import { Learn } from './pages/Learn';
@@ -56,9 +57,11 @@ function AppInner() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <LangProvider>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </LangProvider>
   );
 }
 

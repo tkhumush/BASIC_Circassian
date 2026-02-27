@@ -1,6 +1,7 @@
 import { useAuth } from '../hooks/useAuth';
 import { useProgress } from '../hooks/useProgress';
-import { categories, words, getWordsByCategory } from '../data/words';
+import { useLang } from '../hooks/useLang';
+import { categories, words, getWordsByCategory, getCategoryName } from '../data/words';
 
 interface HomeProps {
   onStartCategory: (categoryId: string) => void;
@@ -11,6 +12,7 @@ interface HomeProps {
 export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps) {
   const { profile } = useAuth();
   const { progress } = useProgress();
+  const { lang, toggleLang, isArabic } = useLang();
 
   const totalWords = words.length;
   const learnedCount = Object.values(progress.assessments).filter(a => a.level >= 2).length;
@@ -24,25 +26,30 @@ export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps)
   };
 
   return (
-    <div className="home-container">
+    <div className={`home-container ${isArabic ? 'rtl' : ''}`}>
       <header className="home-header">
         <div className="header-left">
           <h1 className="app-title">Adigabza</h1>
           <span className="header-subtitle">Circassian</span>
         </div>
-        <button className="avatar-btn" onClick={onShowProfile}>
-          {profile?.display_name?.[0]?.toUpperCase() || '?'}
-        </button>
+        <div className="header-right">
+          <button className="btn btn-lang-toggle" onClick={toggleLang}>
+            {lang === 'en' ? 'عربي' : 'EN'}
+          </button>
+          <button className="avatar-btn" onClick={onShowProfile}>
+            {profile?.display_name?.[0]?.toUpperCase() || '?'}
+          </button>
+        </div>
       </header>
 
       <div className="stats-bar">
         <div className="stat-item">
           <span className="stat-value">{learnedCount}</span>
-          <span className="stat-label">words learned</span>
+          <span className="stat-label">{isArabic ? 'تعلّمت' : 'learned'}</span>
         </div>
         <div className="stat-item">
           <span className="stat-value">{masteredCount}</span>
-          <span className="stat-label">mastered</span>
+          <span className="stat-label">{isArabic ? 'أتقنت' : 'mastered'}</span>
         </div>
         <div className="stat-item">
           <span className="stat-value">{progress.xp}</span>
@@ -50,7 +57,7 @@ export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps)
         </div>
         <div className="stat-item">
           <span className="stat-value">{progress.streakDays}</span>
-          <span className="stat-label">day streak</span>
+          <span className="stat-label">{isArabic ? 'أيام متتالية' : 'day streak'}</span>
         </div>
       </div>
 
@@ -58,10 +65,14 @@ export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps)
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
         </div>
-        <span className="progress-text">{progressPercent}% complete — {learnedCount}/{totalWords} words</span>
+        <span className="progress-text">
+          {isArabic
+            ? `${progressPercent}% مكتمل — ${learnedCount}/${totalWords} كلمة`
+            : `${progressPercent}% complete — ${learnedCount}/${totalWords} words`}
+        </span>
       </div>
 
-      <h2 className="section-title">Categories</h2>
+      <h2 className="section-title">{isArabic ? 'الأقسام' : 'Categories'}</h2>
       <div className="category-grid">
         {categories.map(cat => {
           const { learned, total } = getCategoryProgress(cat.id);
@@ -77,7 +88,7 @@ export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps)
                 <span className="cat-emoji">{cat.emoji}</span>
                 <span className="cat-progress">{learned}/{total}</span>
               </div>
-              <h3 className="cat-name">{cat.name}</h3>
+              <h3 className="cat-name">{getCategoryName(cat, lang)}</h3>
               <div className="cat-bar">
                 <div
                   className="cat-bar-fill"
@@ -86,11 +97,11 @@ export function Home({ onStartCategory, onStartQuiz, onShowProfile }: HomeProps)
               </div>
               <div className="cat-actions">
                 <button className="btn btn-cat-learn" onClick={() => onStartCategory(cat.id)}>
-                  Learn
+                  {isArabic ? 'تعلّم' : 'Learn'}
                 </button>
                 {learned > 0 && (
                   <button className="btn btn-cat-quiz" onClick={() => onStartQuiz(cat.id)}>
-                    Quiz
+                    {isArabic ? 'اختبار' : 'Quiz'}
                   </button>
                 )}
               </div>
