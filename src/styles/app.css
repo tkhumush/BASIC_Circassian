@@ -947,6 +947,66 @@ body {
   justify-content: center;
 }
 
+/* === Language Toggle === */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-lang-toggle {
+  background: #F0EDFF;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 2px solid var(--primary-light);
+}
+
+/* === Arabic / RTL Support === */
+.arabic-text {
+  font-family: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif;
+  direction: rtl;
+  font-size: 1.8rem;
+}
+
+.word-english.arabic-text {
+  font-size: 1.8rem;
+}
+
+.word-english-large.arabic-text {
+  font-size: 2rem;
+}
+
+.quiz-option.arabic-text {
+  text-align: right;
+  direction: rtl;
+  font-size: 1.1rem;
+}
+
+.rtl {
+  direction: rtl;
+}
+
+.rtl .category-card {
+  border-left: none;
+  border-right: 4px solid var(--cat-color, #ccc);
+}
+
+.rtl .category-card:hover {
+  transform: translateX(-2px);
+}
+
+.rtl .quiz-option {
+  text-align: right;
+}
+
+.rtl .stat-label {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* === Mobile first, already optimized === */
 @media (min-width: 480px) {
   .category-grid {

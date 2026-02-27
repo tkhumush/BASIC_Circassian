@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { getWordsByCategory, categories, type Word } from '../data/words';
+import { getWordsByCategory, categories, getMeaning, type Word, type TargetLang } from '../data/words';
 import { useProgress } from '../hooks/useProgress';
+import { useLang } from '../hooks/useLang';
 
 interface QuizProps {
   categoryId: string;
@@ -20,25 +21,25 @@ interface QuizQuestion {
   word: Word;
   options: string[];
   correctIndex: number;
-  mode: 'circToEng' | 'engToCirc';
+  mode: 'circToTarget' | 'targetToCirc';
 }
 
-function generateQuestions(catWords: Word[], allWords: Word[]): QuizQuestion[] {
+function generateQuestions(catWords: Word[], allWords: Word[], lang: TargetLang): QuizQuestion[] {
   const shuffled = shuffleArray(catWords);
   return shuffled.map(word => {
-    const mode = Math.random() > 0.5 ? 'circToEng' : 'engToCirc';
+    const mode = Math.random() > 0.5 ? 'circToTarget' : 'targetToCirc';
 
-    // Get 3 wrong answers from the same category if possible, else from all words
     const others = catWords.filter(w => w.index !== word.index);
     const pool = others.length >= 3 ? others : allWords.filter(w => w.index !== word.index);
     const wrongAnswers = shuffleArray(pool).slice(0, 3);
 
-    if (mode === 'circToEng') {
-      const allOptions = shuffleArray([word.english, ...wrongAnswers.map(w => w.english)]);
+    if (mode === 'circToTarget') {
+      const correct = getMeaning(word, lang);
+      const allOptions = shuffleArray([correct, ...wrongAnswers.map(w => getMeaning(w, lang))]);
       return {
         word,
         options: allOptions,
-        correctIndex: allOptions.indexOf(word.english),
+        correctIndex: allOptions.indexOf(correct),
         mode,
       };
     } else {
@@ -57,11 +58,11 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
   const catWords = getWordsByCategory(categoryId);
   const category = categories.find(c => c.id === categoryId);
   const { updateWordAssessment } = useProgress();
-  const allCatWords = catWords;
+  const { lang, isArabic } = useLang();
 
   const questions = useMemo(
-    () => generateQuestions(catWords, allCatWords),
-    [categoryId], // eslint-disable-line react-hooks/exhaustive-deps
+    () => generateQuestions(catWords, catWords, lang),
+    [categoryId, lang], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const [qIdx, setQIdx] = useState(0);
@@ -92,16 +93,18 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
     const percent = Math.round((score / questions.length) * 100);
     const emoji = percent >= 80 ? '🎉' : percent >= 50 ? '👍' : '💪';
     return (
-      <div className="quiz-container">
+      <div className={`quiz-container ${isArabic ? 'rtl' : ''}`}>
         <div className="quiz-results animate-in">
           <span className="results-emoji">{emoji}</span>
-          <h2>Quiz Complete!</h2>
+          <h2>{isArabic ? 'انتهى الاختبار!' : 'Quiz Complete!'}</h2>
           <div className="results-score">
             <span className="score-big">{score}/{questions.length}</span>
             <span className="score-percent">{percent}%</span>
           </div>
           <div className="results-buttons">
-            <button className="btn btn-primary" onClick={onBack}>Continue</button>
+            <button className="btn btn-primary" onClick={onBack}>
+              {isArabic ? 'متابعة' : 'Continue'}
+            </button>
           </div>
         </div>
       </div>
@@ -111,10 +114,12 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
   if (!q) return null;
 
   return (
-    <div className="quiz-container">
+    <div className={`quiz-container ${isArabic ? 'rtl' : ''}`}>
       <header className="learn-header">
-        <button className="btn btn-back" onClick={onBack}>Back</button>
-        <h2>{category?.emoji} Quiz</h2>
+        <button className="btn btn-back" onClick={onBack}>
+          {isArabic ? 'رجوع' : 'Back'}
+        </button>
+        <h2>{category?.emoji} {isArabic ? 'اختبار' : 'Quiz'}</h2>
         <span className="learn-counter">{qIdx + 1}/{questions.length}</span>
       </header>
 
@@ -130,16 +135,20 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
 
       <div className="quiz-question animate-in">
         <p className="quiz-prompt">
-          {q.mode === 'circToEng' ? 'What does this mean?' : 'Which is the Circassian word for:'}
+          {q.mode === 'circToTarget'
+            ? (isArabic ? 'ما معنى هذه الكلمة؟' : 'What does this mean?')
+            : (isArabic ? 'ما الكلمة الشركسية لـ:' : 'Which is the Circassian word for:')}
         </p>
         <div className="quiz-word">
-          {q.mode === 'circToEng' ? (
+          {q.mode === 'circToTarget' ? (
             <>
               <span className="word-circassian">{q.word.circassian}</span>
               <span className="word-pronunciation">{q.word.pronunciation}</span>
             </>
           ) : (
-            <span className="word-english-large">{q.word.english}</span>
+            <span className={`word-english-large ${isArabic ? 'arabic-text' : ''}`}>
+              {getMeaning(q.word, lang)}
+            </span>
           )}
         </div>
       </div>
@@ -147,6 +156,7 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
       <div className="quiz-options">
         {q.options.map((opt, i) => {
           let optClass = 'quiz-option';
+          if (q.mode === 'circToTarget' && isArabic) optClass += ' arabic-text';
           if (selected !== null) {
             if (i === q.correctIndex) optClass += ' correct';
             else if (i === selected) optClass += ' wrong';
@@ -167,7 +177,9 @@ export function Quiz({ categoryId, onBack }: QuizProps) {
       {selected !== null && (
         <div className="quiz-next animate-in">
           <button className="btn btn-primary" onClick={handleNext}>
-            {qIdx < questions.length - 1 ? 'Next' : 'See Results'}
+            {qIdx < questions.length - 1
+              ? (isArabic ? 'التالي' : 'Next')
+              : (isArabic ? 'النتائج' : 'See Results')}
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { getWordsByCategory, categories, type Word } from '../data/words';
+import { getWordsByCategory, categories, getMeaning, getCategoryName, type Word } from '../data/words';
 import { useProgress } from '../hooks/useProgress';
+import { useLang } from '../hooks/useLang';
 
 interface LearnProps {
   categoryId: string;
@@ -11,6 +12,7 @@ export function Learn({ categoryId, onBack }: LearnProps) {
   const catWords = getWordsByCategory(categoryId);
   const category = categories.find(c => c.id === categoryId);
   const { progress, updateWordAssessment } = useProgress();
+  const { lang, isArabic } = useLang();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [rated, setRated] = useState(false);
@@ -20,7 +22,10 @@ export function Learn({ categoryId, onBack }: LearnProps) {
   if (!word) return null;
 
   const assessment = progress.assessments[word.index];
-  const levelLabel = ['New', 'Seen', 'Learning', 'Familiar', 'Mastered'][assessment?.level ?? 0];
+  const levelLabels = isArabic
+    ? ['جديد', 'شوهد', 'يتعلّم', 'مألوف', 'متقن']
+    : ['New', 'Seen', 'Learning', 'Familiar', 'Mastered'];
+  const levelLabel = levelLabels[assessment?.level ?? 0];
   const levelColor = ['#999', '#FFB347', '#87CEEB', '#77DD77', '#FFD700'][assessment?.level ?? 0];
 
   const handleRate = useCallback((correct: boolean) => {
@@ -53,10 +58,12 @@ export function Learn({ categoryId, onBack }: LearnProps) {
   }, [currentIdx]);
 
   return (
-    <div className="learn-container">
+    <div className={`learn-container ${isArabic ? 'rtl' : ''}`}>
       <header className="learn-header">
-        <button className="btn btn-back" onClick={onBack}>Back</button>
-        <h2>{category?.emoji} {category?.name}</h2>
+        <button className="btn btn-back" onClick={onBack}>
+          {isArabic ? 'رجوع' : 'Back'}
+        </button>
+        <h2>{category?.emoji} {category ? getCategoryName(category, lang) : ''}</h2>
         <span className="learn-counter">{currentIdx + 1}/{catWords.length}</span>
       </header>
 
@@ -80,14 +87,16 @@ export function Learn({ categoryId, onBack }: LearnProps) {
             <span className="word-level" style={{ color: levelColor }}>{levelLabel}</span>
             <span className="word-circassian">{word.circassian}</span>
             <span className="word-pronunciation">{word.pronunciation}</span>
-            <span className="tap-hint">Tap to reveal</span>
+            <span className="tap-hint">{isArabic ? 'اضغط للكشف' : 'Tap to reveal'}</span>
           </div>
           <div className="flashcard-back">
             <span className="word-level" style={{ color: levelColor }}>{levelLabel}</span>
             <span className="word-circassian">{word.circassian}</span>
             <span className="word-pronunciation">{word.pronunciation}</span>
             <div className="word-divider" />
-            <span className="word-english">{word.english}</span>
+            <span className={`word-english ${isArabic ? 'arabic-text' : ''}`}>
+              {getMeaning(word, lang)}
+            </span>
           </div>
         </div>
       </div>
@@ -95,10 +104,10 @@ export function Learn({ categoryId, onBack }: LearnProps) {
       {flipped && !rated && (
         <div className="rate-buttons animate-in">
           <button className="btn btn-wrong" onClick={() => handleRate(false)}>
-            Still learning
+            {isArabic ? 'ما زلت أتعلّم' : 'Still learning'}
           </button>
           <button className="btn btn-correct" onClick={() => handleRate(true)}>
-            Got it!
+            {isArabic ? 'فهمتها!' : 'Got it!'}
           </button>
         </div>
       )}
@@ -106,15 +115,15 @@ export function Learn({ categoryId, onBack }: LearnProps) {
       {rated && (
         <div className="nav-buttons animate-in">
           <button className="btn btn-nav" onClick={prevCard} disabled={currentIdx === 0}>
-            Previous
+            {isArabic ? 'السابق' : 'Previous'}
           </button>
           {currentIdx < catWords.length - 1 ? (
             <button className="btn btn-nav btn-primary" onClick={nextCard}>
-              Next
+              {isArabic ? 'التالي' : 'Next'}
             </button>
           ) : (
             <button className="btn btn-nav btn-primary" onClick={onBack}>
-              Done!
+              {isArabic ? 'تم!' : 'Done!'}
             </button>
           )}
         </div>
